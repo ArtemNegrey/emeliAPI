@@ -29,7 +29,7 @@ interface WordPressPost {
 
     const baseUrl = 'https://dev.emeli.in.ua/wp-json/wp/v2';
     const credentials = Buffer.from('admin:Engineer_123').toString('base64');
-    const perfomanceTimeOut = 3000;
+    const performanceTimeOut = 3000;
 
     test.beforeAll (async({request})=>{
 
@@ -51,35 +51,93 @@ interface WordPressPost {
         }
 
     })
-    test ('create new post', async({request})=>{
-
+    test("create new post", async ({ request }) => {
         const postData = {
-
-            title: 'title test Post',
-            content: 'content test Post',
-            status: 'publish'
-
-        }
-
+          title: "title test Post",
+          content: "content test Post",
+          status: "publish",
+        };
+    
         const startTime = Date.now();
-        const responce = await request.post(`${baseUrl}/posts`, {
-
-            headers:{
-                'Authorization': `Basic ${credentials}`,
-                'Content-Type': `application/json`
-            },
-
-            data: postData
-
+        const response = await request.post(`${baseUrl}/posts`, {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+            "Content-Type": "application/json",
+          },
+          data: postData,
         });
+    
+        const responseTime = Date.now() - startTime;
+        expect(responseTime).toBeLessThan(performanceTimeOut);
+        expect(response.status()).toBe(201);
+    
+        const responseData = await response.json();
+        expect(responseData).toMatchObject({
+          id: expect.any(Number),
+          date: expect.any(String),
+          title: {
+            rendered: postData.title,
+          },
+          content: {
+            rendered: expect.stringContaining(postData.content),
+          },
+          status: "publish",
+        });
+    
+        expect(responseData.title.rendered).toBe(postData.title);
+        expect(responseData.content.rendered).toContain(postData.content);
+    
+        createdPostIds.push(responseData.id);
+        console.log("Post created with ID:", responseData.id);
+      });
 
-        const responceTime = Date.now() - startTime;
-        expect (responceTime).toBeLessThan(perfomanceTimeOut)
-        expect (responce.status()).toBe(201)
-        
-    })
+      test("get posts list", async ({ request }) => {
+        const response = await request.get(`${baseUrl}/posts`, {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+          },
+        });
+    
+        expect(response.status()).toBe(200);
+        const posts: WordPressPost[] = await response.json();
+        expect(posts.length).toBeGreaterThan(0);
+    
+        for (const post of posts) {
+          expect(post).toMatchObject({
+            id: expect.any(Number),
+            date: expect.any(String),
+            title: {
+              rendered: expect.any(String),
+            },
+            content: {
+              rendered: expect.any(String),
+              protected: expect.any(Boolean),
+            },
+          });
+        }
+    
+        console.log("Number of posts:", posts.length);
+      });
+
+      test("remove post from list", async ({ request }) => {
+        const response = await request.delete(`${baseUrl}/posts/14814`, {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+          },
+        });
+    
+        expect(response.status()).toBe(200);
+      });
+
+      test("check deleted post from list", async ({ request }) => {
+        const response = await request.get(`${baseUrl}/posts/14814`, {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+          },
+        });
+    
+        expect(response.status()).toBe(200);
+      });
 
     
-
-
 })
