@@ -83,7 +83,7 @@ interface WordPressPost {
           },
           status: "publish",
         });
-    
+        
         expect(responseData.title.rendered).toBe(postData.title);
         expect(responseData.content.rendered).toContain(postData.content);
     
@@ -120,7 +120,7 @@ interface WordPressPost {
       });
 
       test("remove post from list", async ({ request }) => {
-        const response = await request.delete(`${baseUrl}/posts/14814`, {
+        const response = await request.delete(`${baseUrl}/posts/${createdPostIds.length-1}?force=true`, {
           headers: {
             Authorization: `Basic ${credentials}`,
           },
@@ -130,13 +130,13 @@ interface WordPressPost {
       });
 
       test("check deleted post from list", async ({ request }) => {
-        const response = await request.get(`${baseUrl}/posts/14814`, {
+        const response = await request.get(`${baseUrl}/posts/${createdPostIds.length-1}`, {
           headers: {
             Authorization: `Basic ${credentials}`,
           },
         });
     
-        expect(response.status()).toBe(200);
+        expect(response.status()).toBe(404);
       });
 
     
